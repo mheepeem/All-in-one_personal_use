@@ -57,7 +57,7 @@ class Sidebar(QWidget):
         # Create the layout for the sidebar
         layout = QVBoxLayout(self)
         layout.addWidget(self.sidebar)
-        # layout.setContentsMargins(5, 5, 5, 5)  # Set margins to 0
+        layout.setContentsMargins(0,0,0,0)  # Set margins to 0
         self.sidebar.setStyleSheet("QListWidget { border-radius: 0px; }")
         self.setLayout(layout)
 
