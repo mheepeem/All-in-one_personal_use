@@ -3,14 +3,14 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
 
-class Google(QWidget):
+class Gemini(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Google")
+        self.setWindowTitle("Gemini")
 
         self.web_view = QWebEngineView()
         self.web_view.setPage(WebEnginePageWithHistory(self))
-        self.web_view.load(QUrl('https://www.google.com/'))
+        self.web_view.load(QUrl('https://gemini.google.com/'))
         # self.web_view.loadFinished.connect(self.on_load_finished)
 
         back_button = QPushButton("Back")

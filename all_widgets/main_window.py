@@ -5,6 +5,7 @@ from all_widgets.widgets import Sidebar, PDFViewer
 from all_widgets.cryptit import CryptIt
 from modules.event_handler import InternetChecker
 from all_widgets.google import Google
+from all_widgets.gemini import Gemini
 import resources
 
 class MainWindow(QMainWindow):
@@ -56,6 +57,7 @@ class MainWindow(QMainWindow):
         self.content_area = QStackedWidget()
         self.content_area.addWidget(CryptIt())
         self.content_area.addWidget(Google())
+        self.content_area.addWidget(Gemini())
 
         # self.content_area.addWidget(QLabel("Settings Page"))
         # self.content_area.addWidget(QLabel("About Page"))

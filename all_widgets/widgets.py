@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout,
                                QListWidgetItem, QLabel, QSizePolicy, QFrame, QGridLayout, QComboBox,
                                QStyledItemDelegate, QLineEdit, QFormLayout, QFileDialog)
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, Signal, QUrl
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
 import resources
@@ -45,6 +45,7 @@ class Sidebar(QWidget):
         # Add the buttons to the sidebar with icons
         self.add_sidebar_item("CryptIt", ":/images/icons/cryptit.png")
         self.add_sidebar_item("Google", ":/images/icons/google.png")
+        self.add_sidebar_item("Gemini", ":/images/icons/gemini.png")
         # self.add_sidebar_item("Home", "./images/icons/cryptit.png")
         # self.add_sidebar_item("About", "./images/icons/cryptit.png")
 
@@ -62,6 +63,13 @@ class Sidebar(QWidget):
     def add_sidebar_item(self, text, icon_path):
         item = QListWidgetItem(self.sidebar)
         item.setText(text)
+
+        # pixmap = QPixmap(icon_path)
+        # icon = QIcon(pixmap)
+        # print(icon.availableSizes())
+        # target_size = QSize(34, 34)  # Choose your desired icon size
+        # pixmap = pixmap.scaled(target_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        # icon = QIcon(pixmap)
         item.setIcon(QIcon(icon_path))
         self.sidebar.addItem(item)
         self.sidebar_items.append(item)  # Add the item to the list
