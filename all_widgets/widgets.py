@@ -2,14 +2,11 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout,
                                QPushButton, QListWidget, QStackedWidget, QHBoxLayout,
                                QListWidgetItem, QLabel, QSizePolicy, QFrame, QGridLayout, QComboBox,
                                QStyledItemDelegate, QLineEdit, QFormLayout, QFileDialog)
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, Signal
-from PySide6.QtGui import QIcon, QPalette
-
-# class CenteredComboBoxDelegate(QStyledItemDelegate):
-#     def initStyleOption(self, option, index):
-#         super().initStyleOption(option, index)
-#         # Center-align both horizontally and vertically
-#         option.displayAlignment = Qt.AlignCenter
+from PySide6.QtCore import Qt, QSize, QPropertyAnimation, Signal, QUrl
+from PySide6.QtGui import QIcon
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineSettings
+import resources
 
 class Sidebar(QWidget):
     page_changed = Signal(int)
@@ -46,9 +43,10 @@ class Sidebar(QWidget):
         self.sidebar_items = []
 
         # Add the buttons to the sidebar with icons
-        self.add_sidebar_item("CryptIt", "./images/icons/padlock.png")
-        # self.add_sidebar_item("Home", "./images/icons/padlock.png")
-        # self.add_sidebar_item("About", "./images/icons/padlock.png")
+        self.add_sidebar_item("CryptIt", ":/images/icons/cryptit.png")
+        self.add_sidebar_item("Google", ":/images/icons/google.png")
+        # self.add_sidebar_item("Home", "./images/icons/cryptit.png")
+        # self.add_sidebar_item("About", "./images/icons/cryptit.png")
 
         # Connect itemClicked signal to emit_page_changed using a loop
         self.sidebar.setIconSize(QSize(28, 28))
@@ -112,9 +110,6 @@ class DragAndDropArea(QWidget):
                     border: 2px dashed #FFFFFF; /* Red dashed border */
                     border-radius: 10px; /* Rounded corners */
                     padding: 10px; /* Add some padding */
-                    font-family: Ariel; /* Set the font family */
-                    font-size: 12px; /* Set the font size */
-                    font-weight: bold; /* Make the text bold (optional) */
                 }
             """)
 
@@ -136,9 +131,6 @@ class DragAndDropArea(QWidget):
                             border: 2px dashed #FFFFFF; /* Red dashed border */
                             border-radius: 10px; /* Rounded corners */
                             padding: 10px; /* Add some padding */
-                            font-family: Ariel; /* Set the font family */
-                            font-size: 12px; /* Set the font size */
-                            font-weight: bold; /* Make the text bold (optional) */
                         }
                     """)
 
@@ -158,14 +150,33 @@ class DragAndDropArea(QWidget):
                                 border: 2px dashed #FFFFFF; /* Red dashed border */
                                 border-radius: 10px; /* Rounded corners */
                                 padding: 10px; /* Add some padding */
-                                font-family: Ariel; /* Set the font family */
-                                font-size: 12px; /* Set the font size */
-                                font-weight: bold; /* Make the text bold (optional) */
                             }
                         """)
             self.filesDropped.emit(all_filepaths)
         else:
             event.ignore()
+
+class PDFViewer(QWidget):
+    def __init__(self, filepath):
+        super().__init__()
+        self.setWindowTitle("PDF Viewer")
+
+        self.web_view = QWebEngineView()
+        # Set PDF Viewer to True, if not you can't load and view a pdf.
+        self.web_view.settings().setAttribute(QWebEngineSettings.PluginsEnabled, True)
+        self.web_view.settings().setAttribute(QWebEngineSettings.PdfViewerEnabled, True)
+        self.web_view.load(QUrl.fromLocalFile(filepath))
+        self.web_view.loadFinished.connect(self.on_load_finished)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.web_view)
+        self.setLayout(layout)
+
+    def on_load_finished(self, success):
+        if not success:
+            print("Failed to load PDF.")
+
+
 
 
 

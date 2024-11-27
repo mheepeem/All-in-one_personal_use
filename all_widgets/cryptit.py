@@ -1,6 +1,3 @@
-from os import write
-from sys import modules
-
 from PySide6.QtWidgets import (QWidget, QVBoxLayout,
                                QPushButton, QSizePolicy,  QComboBox,
                                QLineEdit, QFormLayout, QFileDialog)
@@ -8,14 +5,10 @@ from PySide6.QtCore import Qt
 
 from modules.event_handler import show_error_message, show_success_message
 from modules.os import read_file, write_file, get_file_type
-from modules.security import decrypt_message, encrypt_message, encrypt_kv_value_only
-from widgets import DragAndDropArea
+from modules.security import *
+from all_widgets.widgets import DragAndDropArea
+from modules.event_handler import *
 import os
-import sys
-sys.path.append('./modules')
-
-from security import *
-from event_handler import *
 
 class CryptIt(QWidget):
     def __init__(self):
