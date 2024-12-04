@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QMainWindow, QWidget,QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QApplication
-from PySide6.QtGui import  QPixmap, QFontDatabase, QFont
+from PySide6.QtGui import  QPixmap, QFontDatabase, QFont, QIcon
 from PySide6.QtCore import Qt
-from all_widgets.widgets import Sidebar, PDFViewer
+from all_widgets.widgets import Sidebar
 from all_widgets.cryptit import CryptIt
 from modules.event_handler import InternetChecker
 from all_widgets.google import Google
@@ -14,6 +14,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.app = app
         self.setWindowTitle("Mheepeem's Universal App")
+        self.setWindowIcon(QIcon(":/images/icons/origami.png"))
 
         # Load Fonts
         font_id = QFontDatabase.addApplicationFont(":/fonts/Kanit-Medium.ttf")  # Replace with your font file path

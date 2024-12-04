@@ -6,6 +6,12 @@
     <file>images/icons/cryptit.png</file>
     <file>images/icons/gemini.png</file>
     <file>images/icons/pdf.png</file>
+    <file>images/icons/condom.png</file>
+    <file>images/icons/whale.png</file>
+    <file>images/icons/rocket.png</file>
+    <file>images/icons/boat.png</file>
+    <file>images/icons/rabbit.png</file>
+    <file>images/icons/origami.png</file>
     <file>fonts/Kanit-Medium.ttf</file>
 </qresource>
 </RCC>
