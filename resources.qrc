@@ -1,0 +1,11 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>images/components/red-dot.png</file>
+    <file>images/components/green-dot.png</file>
+    <file>images/icons/google.png</file>
+    <file>images/icons/cryptit.png</file>
+    <file>images/icons/gemini.png</file>
+    <file>images/icons/pdf.png</file>
+    <file>fonts/Kanit-Medium.ttf</file>
+</qresource>
+</RCC>

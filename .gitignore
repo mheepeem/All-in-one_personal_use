@@ -1,3 +1,5 @@
 .venv/
 
-resources.qrc
+test.py
+
+environment.yml

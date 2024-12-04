@@ -46,6 +46,7 @@ class Sidebar(QWidget):
         self.add_sidebar_item("CryptIt", ":/images/icons/cryptit.png")
         self.add_sidebar_item("Google", ":/images/icons/google.png")
         self.add_sidebar_item("Gemini", ":/images/icons/gemini.png")
+        self.add_sidebar_item("PDF", ":/images/icons/pdf.png")
         # self.add_sidebar_item("Home", "./images/icons/cryptit.png")
         # self.add_sidebar_item("About", "./images/icons/cryptit.png")
 
