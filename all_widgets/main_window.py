@@ -1,116 +1,159 @@
-from PySide6.QtWidgets import QMainWindow, QWidget,QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel, QApplication
-from PySide6.QtGui import  QPixmap, QFontDatabase, QFont, QIcon
+from PySide6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QStackedWidget, QLabel
+from PySide6.QtGui import QPixmap, QFontDatabase, QFont, QIcon
 from PySide6.QtCore import Qt
-from all_widgets.widgets import Sidebar
-from all_widgets.cryptit import CryptIt
+from all_widgets.sidebar import Sidebar
 from modules.event_handler import InternetChecker
-from all_widgets.google import Google
-from all_widgets.gemini import Gemini
-from all_widgets.pdf_page_merger import PDFPageMerger
-import resources
+from all_widgets.registry import AppRegistry
+
 
 class MainWindow(QMainWindow):
-    def __init__(self,app):
+    def __init__(self, app):
         super().__init__()
         self.app = app
         self.setWindowTitle("Mheepeem's Universal App")
         self.setWindowIcon(QIcon(":/images/icons/origami.png"))
 
-        # Load Fonts
-        font_id = QFontDatabase.addApplicationFont(":/fonts/Kanit-Medium.ttf")  # Replace with your font file path
-        font_families = QFontDatabase.applicationFontFamilies(font_id)
+        # State tracking
+        self.is_first_load = True
+        self.last_selected_main_app = 0  # Default to the first valid app index
 
+        # Load fonts
+        font_id = QFontDatabase.addApplicationFont(":/fonts/Kanit-Medium.ttf")
+        font_families = QFontDatabase.applicationFontFamilies(font_id)
         if font_families:
-            font_family = font_families[0]  # Get the first font family from the loaded font
-            font = QFont(font_family, 10)  # Create a QFont object with the desired size
+            font_family = font_families[0]
+            font = QFont(font_family, 10)
             self.app.setFont(font)
 
-        # Get and set screen size
-        screen = QApplication.primaryScreen()
-        screen_geometry = screen.availableGeometry()
-        screen_width = screen_geometry.width()
-        screen_height = screen_geometry.height()
-        self.setMinimumSize(screen_width * 0.2, screen_height * 0.2)
-
+        # Menubar
         self.menubar = self.menuBar()
         self.menubar.setStyleSheet("""
             QMenuBar {
-                background-color: #2D2D2D; /* Replace with your sidebar's background color */
-                color: white; /* Optional: Set text color */
+                background-color: #2D2D2D;
+                color: white;
             }
             QMenuBar::item {
                 background-color: transparent;
             }
             QMenuBar::item:selected {
-                background-color: #3E3E3E; /* Optional: Highlight color when hovering */
+                background-color: #3E3E3E;
             }
         """)
 
-        # Internet Status Icon
+        # Internet status
         self.status_icon_label = QLabel()
-        self.status_icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.initial_pixmap = QPixmap(":/images/components/red-dot.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Replace with your image path
-        self.status_icon_label.setPixmap(self.initial_pixmap)
+        self.status_icon_label.setPixmap(
+            QPixmap(":/images/components/red-dot.png").scaled(20, 20, Qt.KeepAspectRatio)
+        )
         self.menubar.setCornerWidget(self.status_icon_label, Qt.TopRightCorner)
-        self.status_icon_label.setContentsMargins(0,2,5,2)
 
+        # Sidebar and content area
         self.sidebar = Sidebar()
-
         self.content_area = QStackedWidget()
-        self.content_area.addWidget(CryptIt())
-        self.content_area.addWidget(Google())
-        self.content_area.addWidget(Gemini())
-        self.content_area.addWidget(PDFPageMerger())
+        self.blank_page = QWidget()  # Create a blank page
+        self.content_area.addWidget(self.blank_page)  # Add blank page at index 0
 
-        # self.content_area.addWidget(QLabel("Settings Page"))
-        # self.content_area.addWidget(QLabel("About Page"))
+        # Load apps dynamically
+        self.load_apps()
 
-        # Connect the sidebar's page_changed signal to switch_page
-        self.sidebar.page_changed.connect(self.switch_page)
-
-        # Create the main layout
-        All_content_layout = QHBoxLayout()
-        All_content_layout.addWidget(self.sidebar)
-        All_content_layout.addWidget(self.content_area)
-        All_content_layout.setContentsMargins(0, 0, 0, 0)
-        All_content_layout.setSpacing(0)# Set margins to 0
-
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.menubar)
-        main_layout.addLayout(All_content_layout)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-
-        # Set the central widget
+        # Layout
+        layout = QHBoxLayout()
+        layout.addWidget(self.sidebar)
+        layout.addWidget(self.content_area)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         central_widget = QWidget()
-        central_widget.setLayout(main_layout)
-        central_widget.setContentsMargins(0,0,0,0)
+        central_widget.setLayout(layout)
+        central_widget.setContentsMargins(0, 0, 0, 0)
         self.setCentralWidget(central_widget)
 
-        # Background Execution
-        self.checker_thread = InternetChecker()
-        self.checker_thread.status_changed.connect(self.update_status)
-        self.checker_thread.start()
+        # InternetChecker for background internet status checking
+        self.internet_checker = InternetChecker()
+        self.internet_checker.status_changed.connect(self.update_status_icon)
+        self.internet_checker.start()
 
-    def switch_page(self, index):  # Now in MainWindow
-        self.content_area.setCurrentIndex(index)
+        # Connect signals
+        self.sidebar.page_changed.connect(self.switch_app)
+        self.sidebar.sub_page_changed.connect(self.switch_sub_app)
 
-    def update_status(self, is_connected):
-        if is_connected:
-            pixmap = QPixmap(":/images/components/green-dot.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Replace with your image path
+    def load_apps(self):
+        """Load apps dynamically from the AppRegistry."""
+        for app_name, app_widget in AppRegistry.get_all_apps().items():
+            app_widget.setObjectName(app_name)  # Set the object name for identification
+            self.content_area.addWidget(app_widget)
+
+            # Handle sub-apps
+            sub_apps = AppRegistry.get_all_sub_apps().get(app_name, {})
+            for sub_app_name, sub_app_widget in sub_apps.items():
+                if isinstance(app_widget, QStackedWidget):  # Ensure parent app is a QStackedWidget
+                    sub_app_widget.setObjectName(sub_app_name)
+                    app_widget.addWidget(sub_app_widget)
+
+    def switch_app(self, index):
+        """Switch between main apps."""
+        if self.is_first_load:
+            # On first load, initialize and show the first app
+            self.is_first_load = False
+            self.content_area.setCurrentIndex(index + 1)  # Offset for blank page
+            self.last_selected_main_app = index + 1
+            print(f"First load, switched to main app: {index + 1}.")
+            return
+
+        adjusted_index = index + 1  # Offset for blank page
+        if adjusted_index < self.content_area.count():
+            selected_app = self.content_area.widget(adjusted_index)
+
+            # Check if the selected app has sub-apps
+            sub_apps = AppRegistry.get_all_sub_apps().get(selected_app.objectName(), {})
+            if sub_apps:
+                # If the app has sub-apps, retain the last selected app but update index
+                print(f"Main app '{selected_app.objectName()}' has sub-apps. Retaining previous selection.")
+                self.last_selected_main_app = adjusted_index  # Update index for sub-app switching
+                return
+
+            # For apps without sub-apps, switch directly
+            self.content_area.setCurrentIndex(adjusted_index)
+            self.last_selected_main_app = adjusted_index
+            print(f"Switched to main app at index {index} (adjusted index {adjusted_index}).")
         else:
-            pixmap = QPixmap(":/images/components/red-dot.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Replace with your image path
-        self.status_icon_label.setPixmap(pixmap)
+            print(f"Warning: No main app at index {index}.")
+
+    def switch_sub_app(self, sub_app_name):
+        """Switch between sub-apps."""
+        current_app = self.content_area.currentWidget()
+
+        # Ensure the current app is a QStackedWidget
+        if not isinstance(current_app, QStackedWidget):
+            # Adjust the content area to the main app with sub-apps (PDF in this case)
+            if self.last_selected_main_app < self.content_area.count():
+                self.content_area.setCurrentIndex(self.last_selected_main_app)
+                current_app = self.content_area.currentWidget()
+            else:
+                print(f"Warning: Current app '{type(current_app).__name__}' does not support sub-app switching.")
+                return
+
+        # Find and switch to the correct sub-app
+        for i in range(current_app.count()):
+            widget = current_app.widget(i)
+            if widget.objectName() == sub_app_name:
+                current_app.setCurrentIndex(i)
+                print(f"Switched to sub-app: {sub_app_name}")
+                return
+
+        print(f"Warning: Sub-app '{sub_app_name}' not found.")
+
+    def update_status_icon(self, is_connected):
+        """Update the internet status icon based on connectivity."""
+        if is_connected:
+            self.status_icon_label.setPixmap(
+                QPixmap(":/images/components/green-dot.png").scaled(20, 20, Qt.KeepAspectRatio)
+            )
+        else:
+            self.status_icon_label.setPixmap(
+                QPixmap(":/images/components/red-dot.png").scaled(20, 20, Qt.KeepAspectRatio)
+            )
 
     def closeEvent(self, event):
-        self.checker_thread.stop()  # Stop the thread when the window is closed
-        event.accept()
-
-
-
-
-
-
-
-
-
+        """Stop the InternetChecker when closing the app."""
+        self.internet_checker.stop()
+        super().closeEvent(event)
