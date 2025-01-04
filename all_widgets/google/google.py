@@ -4,6 +4,8 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
 
 class Google(QWidget):
+    icon_path = ":/images/icons/google.png"
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Google")

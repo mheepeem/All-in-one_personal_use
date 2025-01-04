@@ -6,11 +6,14 @@ from PySide6.QtCore import Qt
 from modules.event_handler import show_error_message, show_success_message
 from modules.os import read_file, write_file, get_file_type
 from modules.security import *
-from all_widgets.widgets import DragAndDropArea
+from all_widgets.drag_and_drop import DragAndDropArea
 from modules.event_handler import *
 import os
 
 class CryptIt(QWidget):
+
+    icon_path = ":/images/icons/cryptit.png"
+
     def __init__(self):
         super().__init__()
 

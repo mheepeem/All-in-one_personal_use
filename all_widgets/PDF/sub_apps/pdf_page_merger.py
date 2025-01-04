@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt
 
 from modules.event_handler import show_error_message, show_success_message
-from all_widgets.widgets import DragAndDropArea
+from all_widgets.drag_and_drop import DragAndDropArea
 from modules.event_handler import *
 from modules.utilities import create_dynamic_pages_per_sheet
 from pathlib import Path

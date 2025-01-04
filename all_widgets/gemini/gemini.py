@@ -4,6 +4,8 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
 
 class Gemini(QWidget):
+    icon_path = ":/images/icons/gemini.png"
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Gemini")

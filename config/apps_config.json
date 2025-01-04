@@ -1,0 +1,31 @@
+{
+  "apps": [
+    {
+      "name": "CryptIt",
+      "icon": ":/images/icons/cryptit.png",
+      "class": "CryptIt",
+      "directory": "cryptit"
+    },
+    {
+      "name": "Google",
+      "icon": ":/images/icons/google.png",
+      "class": "Google",
+      "directory": "google"
+    },
+    {
+      "name": "Gemini",
+      "icon": ":/images/icons/gemini.png",
+      "class": "Gemini",
+      "directory": "gemini"
+    },
+    {
+      "name": "PDF",
+      "icon": ":/images/icons/pdf.png",
+      "class": "QStackedWidget",
+      "directory": "PDF",
+      "sub_apps": [
+        { "name": "Merge PDF", "class": "PDFPageMerger", "directory": "sub_apps"}
+      ]
+    }
+  ]
+}
