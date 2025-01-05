@@ -54,13 +54,13 @@ def load_apps_from_config(config_path):
             if app_config["class"] == "QStackedWidget":
                 widget = QStackedWidget()
                 widget.icon_path = app_config["icon"]
-                print(f"Main app registered: {app_config['name']} (as QStackedWidget)")
+                # print(f"Main app registered: {app_config['name']} (as QStackedWidget)")
             else:
                 module = import_module(module_path)
                 app_class = getattr(module, app_config["class"])
                 widget = app_class()
                 widget.icon_path = app_config["icon"]
-                print(f"Main app registered: {app_config['name']} (as {app_config['class']})")
+                # print(f"Main app registered: {app_config['name']} (as {app_config['class']})")
 
             # Register the main app
             AppRegistry.register_app(app_config["name"], widget)
@@ -83,11 +83,13 @@ def load_apps_from_config(config_path):
                         # Add sub-app to the main app if it's a QStackedWidget
                         if isinstance(widget, QStackedWidget):
                             widget.addWidget(sub_widget)
-                            print(f"Sub-app registered: {sub_app_config['name']} under {app_config['name']}")
+                            # print(f"Sub-app registered: {sub_app_config['name']} under {app_config['name']}")
                     except Exception as e:
-                        print(f"Error loading sub-app {sub_app_config['name']}: {e}")
+                        pass
+                        # print(f"Error loading sub-app {sub_app_config['name']}: {e}")
         except Exception as e:
-            print(f"Error loading app {app_config['name']}: {e}")
+            pass
+            # print(f"Error loading app {app_config['name']}: {e}")
 
 
 

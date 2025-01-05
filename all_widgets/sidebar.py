@@ -3,6 +3,9 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, Signal
 from PySide6.QtGui import QIcon, QColor
 from all_widgets.registry import AppRegistry
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class Sidebar(QWidget):
     page_changed = Signal(int)  # Signal for main pages
@@ -124,11 +127,12 @@ class Sidebar(QWidget):
             self.show_subitems(item.text())  # Show sub-items for the selected parent
             index = self.sidebar_items.index(item)
             self.page_changed.emit(index)
+            # logger.info(f"Parent item '{item.text()}' clicked. Page change signal emitted with index {index}.")
         else:
             # Sub-item clicked
             sub_app_name = item.text().strip()
-            print(f"Sub-app clicked: {sub_app_name}")
             self.sub_page_changed.emit(sub_app_name)
+            # logger.info(f"Sub-item '{sub_app_name}' clicked. Sub-page change signal emitted.")
 
     def toggle_sidebar(self):
         """Expand or collapse the sidebar with animation."""
@@ -140,6 +144,7 @@ class Sidebar(QWidget):
             self.animation.setEndValue(self.collapsed_width)
             self.animation.start()
             self.toggle_button.setText("▸")
+            logger.info("Sidebar collapsed.")
         else:
             # Expand animation
             self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
@@ -148,3 +153,4 @@ class Sidebar(QWidget):
             self.animation.setEndValue(self.sidebar_width)
             self.animation.start()
             self.toggle_button.setText("▾")
+            logger.info("Sidebar expanded.")

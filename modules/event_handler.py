@@ -15,24 +15,27 @@ class InternetChecker(QThread):
     """
     status_changed = Signal(bool)
 
-    def __init__(self, interval=5):  # Check every 1 second
+    def __init__(self, interval=10):  # Check every 10 seconds
         super().__init__()
         self.interval = interval
         self._isRunning = True
+        self._last_status = None  # Track the last known status
 
     def run(self):
         while self._isRunning:
-            status = self.check_internet_connection()
-            self.status_changed.emit(status)
+            current_status = self.check_internet_connection()
+            if current_status != self._last_status:  # Log and emit only on status change
+                self.status_changed.emit(current_status)
+                self._last_status = current_status
             time.sleep(self.interval)
 
     def stop(self):
         self._isRunning = False
 
     def check_internet_connection(self):
-        """Checks internet connectivity with a short timeout."""
+        """Check internet connectivity with a short timeout."""
         try:
-            response = requests.get("https://www.google.com", timeout=2)  # 1 second timeout
+            response = requests.get("https://www.google.com", timeout=2)
             response.raise_for_status()
             return True
         except requests.exceptions.RequestException:

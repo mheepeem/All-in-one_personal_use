@@ -9,6 +9,9 @@ from modules.security import *
 from all_widgets.drag_and_drop import DragAndDropArea
 from modules.event_handler import *
 import os
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class CryptIt(QWidget):
 
@@ -42,19 +45,6 @@ class CryptIt(QWidget):
         form_layout_wid = QWidget()
         form_layout_wid.setLayout(form_layout)
 
-        # Save Dir layout
-        # dir_label = QLabel('SAVE DIRECTORY')
-        # dir_browse = QPushButton('Browse')
-        # dir_browse.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # dir_browse.clicked.connect(self.browse_files)
-        #
-        # dir_layout = QHBoxLayout()
-        # dir_layout.addWidget(dir_label)
-        # dir_layout.addWidget(dir_browse, alignment=Qt.AlignmentFlag.AlignLeft)
-        # dir_layout.setContentsMargins(10,0,10,0)
-        # dir_layout_wid = QWidget()
-        # dir_layout_wid.setLayout(dir_layout)
-
         # Confirm Button
         self.confirm_button = QPushButton('Confirm')
         self.confirm_button.setFixedSize(100,40)
@@ -69,19 +59,11 @@ class CryptIt(QWidget):
         self.setLayout(main_layout)
 
         # SIGNAL
-        # self.type_dropdown.currentIndexChanged.connect(self.type_dropdown_print)
-        # self.key_input.textChanged.connect(self.get_key_input_text)
         self.dnd.filesDropped.connect(self.files_dropped_path)
         self.confirm_button.clicked.connect(self.process_all_files)
 
-
-    # def get_key_input_text(self):
-    #     print(self.key_input.text())
-    #
-    # def type_dropdown_print(self):
-    #     print(self.type_dropdown.currentText())
-
     def browse_files(self):
+        logger.info("browse file.")
         file_dialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.Directory)  # Set directory selection mode
         if file_dialog.exec():
@@ -91,17 +73,23 @@ class CryptIt(QWidget):
 
     def files_dropped_path(self, path_list):
         self.path_list = path_list
+        logger.info(f"Files dropped: {path_list}")
 
     def process_all_files(self):
         try:
+            if not self.key_input.text() and not os.environ.get('CRYPTO_KEY'):
+                raise ValueError("No encryption key provided. Please set CRYPTO_KEY or enter a key manually.")
+
             key = os.environ.get('CRYPTO_KEY') if not self.key_input.text() else self.key_input.text()
             cur_val_dropdown = self.type_dropdown.currentText()
             all_files_path = self.path_list
 
             for file_path in all_files_path:
                 # Read data from file
+                logger.info(f"Reading file: {file_path}")
                 data = read_file(file_path)
                 if not data:
+                    logger.warning(f"No data found in file: {file_path}")
                     continue
 
                 dir = os.path.dirname(file_path)
@@ -124,16 +112,20 @@ class CryptIt(QWidget):
                             output_msg = data
                         case _:
                             output_msg = decrypt_message(data, key)
-
                     new_filename = "decrypted_" + filename.replace('encrypted_', '')
 
                 # write new file
                 save_path = os.path.join(dir, new_filename)
                 write_file(save_path, output_msg)
+                logger.info(f"Processed file '{file_path}'. Saved as '{save_path}'.")
+
             show_success_message(None, "SUCCESS", 'Done!')
+            logger.info("All files processed successfully.")
 
         except Exception as e:
             show_error_message(None,"ERROR", f"{e}")
+            logger.error(f"Unexpected error during file processing: {e}")
+            raise
 
 
 
