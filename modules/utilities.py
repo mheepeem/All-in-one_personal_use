@@ -1,5 +1,3 @@
-from venv import logger
-
 from pdfrw import PdfReader, PdfWriter, PageMerge, PdfDict, PdfName
 import os
 import pdfplumber

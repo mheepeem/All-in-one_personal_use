@@ -1,11 +1,11 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout,
-                               QPushButton, QListWidget, QListWidgetItem, QLabel, QSizePolicy)
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QListWidget, QListWidgetItem, QSizePolicy
 from PySide6.QtCore import Qt, QSize, QPropertyAnimation, Signal
-from PySide6.QtGui import QIcon, QColor
+from PySide6.QtGui import QIcon, QColor, QFontMetrics
 from all_widgets.registry import AppRegistry
 from config.logging_config import get_logger
 
 logger = get_logger(__name__)
+
 
 class Sidebar(QWidget):
     page_changed = Signal(int)  # Signal for main pages
@@ -15,16 +15,22 @@ class Sidebar(QWidget):
         super().__init__()
 
         # Sidebar dimensions and styling
-        self.sidebar_width = 80
-        self.collapsed_width = 34
+        self.collapsed_width = 34  # Width when collapsed
+        self.expanded_width = 150  # Initial expanded width
+        self.icon_size = 28  # Fixed icon size
+        self.is_collapsed = False  # Track if the sidebar is collapsed
+        self.indent_width = 20  # Indentation width for sub-items
+
+        # Sidebar appearance
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(self.backgroundRole(), QColor("#2D2D2D"))
         self.setPalette(palette)
 
-        # Data structure to track sub-items
-        self.parent_to_sub_items = {}  # Maps parent item text to a list of sub-items
+        # Data structures
+        self.parent_to_sub_items = {}  # Maps parent item text to sub-items
         self.sidebar_items = []  # Track parent items
+        self.item_text_backup = {}  # Backup for item texts
 
         # Toggle button
         self.toggle_button = QPushButton("▾")
@@ -43,7 +49,7 @@ class Sidebar(QWidget):
 
         # Sidebar list widget
         self.sidebar = QListWidget()
-        self.sidebar.setMaximumWidth(self.sidebar_width)
+        self.sidebar.setIconSize(QSize(self.icon_size, self.icon_size))
         self.sidebar.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.sidebar.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar.setStyleSheet("""
@@ -66,7 +72,6 @@ class Sidebar(QWidget):
         self.populate_sidebar()
 
         # Connect signals
-        self.sidebar.setIconSize(QSize(28, 28))
         self.sidebar.itemClicked.connect(self.handle_item_clicked)
 
     def populate_sidebar(self):
@@ -82,75 +87,108 @@ class Sidebar(QWidget):
             for sub_app_name in sub_apps.keys():
                 self.add_sidebar_subitem(app_name, sub_app_name)
 
+        # Adjust sidebar width based on the longest text
+        self.adjust_sidebar_width()
+
+    def adjust_sidebar_width(self):
+        """Adjust the sidebar width dynamically based on the longest text, including sub-items."""
+        font_metrics = QFontMetrics(self.sidebar.font())
+        max_text_width = 0
+
+        for i in range(self.sidebar.count()):
+            item = self.sidebar.item(i)
+            text = item.text().strip()
+            text_width = font_metrics.horizontalAdvance(text)
+
+            # Add indentation for sub-items
+            if item.data(Qt.UserRole).get("is_parent") is False:
+                text_width += self.indent_width
+
+            max_text_width = max(max_text_width, text_width)
+
+        # Update the expanded width with padding
+        padding = 10  # Reduce padding to avoid unnecessary extra space
+        self.expanded_width = max(self.collapsed_width + padding, max_text_width + padding)
+        self.sidebar.setMaximumWidth(self.expanded_width)
+
     def add_sidebar_item(self, text, icon_path, is_parent=False):
-        """Add a parent item dynamically."""
+        """Add a parent item."""
         item = QListWidgetItem(self.sidebar)
         item.setText(text)
         item.setIcon(QIcon(icon_path))
         item.setData(Qt.UserRole, {"is_parent": is_parent, "sub_items": []})
+
+        # Backup text for restoration
+        self.item_text_backup[self.sidebar.row(item)] = text
         if is_parent:
             self.parent_to_sub_items[text] = []  # Initialize list for sub-items
         return item
 
     def add_sidebar_subitem(self, parent_text, text):
-        """Add a sub-item dynamically."""
-        sub_item = QListWidgetItem(f"    {text}")
+        """Add a sub-item."""
+        sub_item = QListWidgetItem(f"    {text}")  # Indentation for sub-items
         sub_item.setData(Qt.UserRole, {"is_parent": False, "parent_text": parent_text})
-        self.parent_to_sub_items[parent_text].append(sub_item)  # Track sub-items for the parent
 
-    def show_subitems(self, parent_text):
-        """Show sub-items directly below the selected parent."""
-        parent_row = None
-        for i in range(self.sidebar.count()):
-            if self.sidebar.item(i).text() == parent_text:
-                parent_row = i
-                break
+        # Backup text for restoration
+        self.item_text_backup[self.sidebar.count()] = text
+        self.sidebar.addItem(sub_item)  # Add to sidebar directly
+        self.parent_to_sub_items[parent_text].append(sub_item)
 
-        if parent_row is not None:
-            for sub_item in self.parent_to_sub_items.get(parent_text, []):
-                self.sidebar.insertItem(parent_row + 1, sub_item)
-                parent_row += 1  # Adjust row position for subsequent sub-items
+    def toggle_sidebar(self):
+        """Expand or collapse the sidebar."""
+        if self.is_collapsed:
+            # Expand sidebar
+            self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
+            self.animation.setDuration(200)
+            self.animation.setStartValue(self.collapsed_width)
+            self.animation.setEndValue(self.expanded_width)
+            self.animation.start()
 
-    def hide_all_subitems(self):
-        """Remove all sub-items from the sidebar."""
-        for sub_items in self.parent_to_sub_items.values():
-            for sub_item in sub_items:
-                if self.sidebar.row(sub_item) != -1:  # Check if the item is in the sidebar
-                    self.sidebar.takeItem(self.sidebar.row(sub_item))
+            # Restore text for all items
+            for i in range(self.sidebar.count()):
+                item = self.sidebar.item(i)
+                text = self.item_text_backup.get(i, "")
+                if "    " in text:  # Check for indentation
+                    item.setText(f"    {text.strip()}")
+                else:
+                    item.setText(text)
+
+            self.toggle_button.setText("▾")
+            self.is_collapsed = False
+        else:
+            # Collapse sidebar
+            self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
+            self.animation.setDuration(200)
+            self.animation.setStartValue(self.expanded_width)
+            self.animation.setEndValue(self.collapsed_width)
+            self.animation.start()
+
+            # Hide text for all items
+            for i in range(self.sidebar.count()):
+                item = self.sidebar.item(i)
+                self.item_text_backup[i] = item.text()  # Backup current text
+                item.setText("")  # Hide text
+
+            self.toggle_button.setText("▸")
+            self.is_collapsed = True
 
     def handle_item_clicked(self, item):
         """Handle clicks on parent and sub-items."""
         item_data = item.data(Qt.UserRole)
         if item_data["is_parent"]:
-            # Parent item clicked
-            self.hide_all_subitems()  # Hide all sub-items
-            self.show_subitems(item.text())  # Show sub-items for the selected parent
-            index = self.sidebar_items.index(item)
-            self.page_changed.emit(index)
-            # logger.info(f"Parent item '{item.text()}' clicked. Page change signal emitted with index {index}.")
+            self.hide_all_subitems()
+            self.show_subitems(item.text())
+            self.page_changed.emit(self.sidebar.row(item))  # Emit index for main app
         else:
-            # Sub-item clicked
-            sub_app_name = item.text().strip()
-            self.sub_page_changed.emit(sub_app_name)
-            # logger.info(f"Sub-item '{sub_app_name}' clicked. Sub-page change signal emitted.")
+            self.sub_page_changed.emit(item.text().strip())  # Emit sub-app name
 
-    def toggle_sidebar(self):
-        """Expand or collapse the sidebar with animation."""
-        if self.sidebar.maximumWidth() == self.sidebar_width:
-            # Collapse animation
-            self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
-            self.animation.setDuration(200)
-            self.animation.setStartValue(self.sidebar_width)
-            self.animation.setEndValue(self.collapsed_width)
-            self.animation.start()
-            self.toggle_button.setText("▸")
-            logger.info("Sidebar collapsed.")
-        else:
-            # Expand animation
-            self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
-            self.animation.setDuration(200)
-            self.animation.setStartValue(self.collapsed_width)
-            self.animation.setEndValue(self.sidebar_width)
-            self.animation.start()
-            self.toggle_button.setText("▾")
-            logger.info("Sidebar expanded.")
+    def show_subitems(self, parent_text):
+        """Show sub-items for a parent."""
+        for sub_item in self.parent_to_sub_items.get(parent_text, []):
+            self.sidebar.addItem(sub_item)
+
+    def hide_all_subitems(self):
+        """Hide all sub-items."""
+        for sub_items in self.parent_to_sub_items.values():
+            for sub_item in sub_items:
+                self.sidebar.takeItem(self.sidebar.row(sub_item))

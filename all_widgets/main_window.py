@@ -105,56 +105,65 @@ class MainWindow(QMainWindow):
         """Switch between main apps."""
         adjusted_index = index + 1  # Offset for blank page
 
-        if self.is_first_load:
-            # On first load, initialize and show the selected app
-            self.is_first_load = False
-            self.content_area.setCurrentIndex(adjusted_index)
-            self.last_selected_main_app = adjusted_index
-            logger.info(f"First load completed. Initialized with main app index {index}.")
-            return
-
         if adjusted_index < self.content_area.count():
             selected_app = self.content_area.widget(adjusted_index)
 
-            # Check if the selected app has sub-apps
+            # Determine if the selected app has sub-apps
             sub_apps = AppRegistry.get_all_sub_apps().get(selected_app.objectName(), {})
-            if sub_apps:
-                # Log app with sub-apps, even if the selection is retained
-                logger.info(
-                    f"Main app '{selected_app.objectName()}' (index {index}) has sub-apps. Retained previous selection.")
-                self.last_selected_main_app = adjusted_index  # Update index for sub-app switching
-                return
+            has_sub_apps = bool(sub_apps)
 
-            # For apps without sub-apps, switch directly
-            self.content_area.setCurrentIndex(adjusted_index)
+            # Log and update last selected app
             self.last_selected_main_app = adjusted_index
-            logger.info(f"Switched to main app: {selected_app.objectName()} (index {index}).")
+            logger.info(f"Switched to main app: {selected_app.objectName()} "
+                        f"(index {index}{', with sub-apps' if has_sub_apps else ''}).")
+
+            # Set the content area to the selected app
+            self.content_area.setCurrentIndex(adjusted_index)
         else:
             logger.warning(f"Invalid main app index: {index}. No app found.")
+
+        # Set first load to false after processing
+        self.is_first_load = False
 
     def switch_sub_app(self, sub_app_name):
         """Switch between sub-apps."""
         current_app = self.content_area.currentWidget()
 
-        # Ensure the current app is a QStackedWidget
+        # If the current app is not a QStackedWidget, locate and switch to the parent main app
         if not isinstance(current_app, QStackedWidget):
-            # Adjust the content area to the main app with sub-apps (PDF in this case)
-            if self.last_selected_main_app < self.content_area.count():
-                self.content_area.setCurrentIndex(self.last_selected_main_app)
-                current_app = self.content_area.currentWidget()
-                logger.info(f"Adjusted to main app '{type(current_app).__name__}' to support sub-app switching.")
-            else:
-                logger.warning(f"Current app '{type(current_app).__name__}' does not support sub-app switching.")
-                return
+            for main_app_name, sub_apps in AppRegistry.get_all_sub_apps().items():
+                if sub_app_name in sub_apps:
+                    for index in range(1, self.content_area.count()):  # Skip blank page
+                        widget = self.content_area.widget(index)
+                        if widget.objectName() == main_app_name:
+                            self.content_area.setCurrentIndex(index)
+                            current_app = widget
+                            self.last_selected_main_app = index  # Update the last selected main app
 
-        # Find and switch to the correct sub-app
+                            # Log the parent main app switch
+                            logger.info(f"Switched to main app: {main_app_name} (index {index - 1}, with sub-apps).")
+                            break
+                    break
+
+        # Ensure the current app is now a QStackedWidget (parent app with sub-apps)
+        if not isinstance(current_app, QStackedWidget):
+            logger.warning(f"Current app '{type(current_app).__name__}' does not support sub-app switching.")
+            return
+
+        # Switch to the correct sub-app
         for i in range(current_app.count()):
             widget = current_app.widget(i)
             if widget.objectName() == sub_app_name:
                 current_app.setCurrentIndex(i)
+
+                # Log the sub-app switch
                 logger.info(f"Switched to sub-app: {sub_app_name}.")
+
+                # Mark first load as complete after switching
+                self.is_first_load = False
                 return
 
+        # Log a warning if the sub-app is not found
         logger.warning(f"Sub-app '{sub_app_name}' not found in the current app.")
 
     def update_status_icon(self, is_connected):
