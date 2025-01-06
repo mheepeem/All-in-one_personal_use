@@ -51,16 +51,21 @@ def create_logging_config():
             "file": {
                 "class": "logging.FileHandler",
                 "formatter": "detailed",
-                "level": "DEBUG",
+                "level": os.getenv("LOG_LEVEL", "INFO").upper(),
                 "filename": str(log_file),
             },
         },
         "root": {
-            "level": os.getenv("LOG_LEVEL", "DEBUG").upper(),
+            "level": os.getenv("LOG_LEVEL", "INFO").upper(),
             "handlers": ["console", "file"],
         },
         "loggers": {
             "urllib3.connectionpool": {
+                "level": "WARNING",  # Suppress debug and info messages
+                "handlers": ["console", "file"],
+                "propagate": False,
+            },
+            "pdfminer": {
                 "level": "WARNING",  # Suppress debug and info messages
                 "handlers": ["console", "file"],
                 "propagate": False,

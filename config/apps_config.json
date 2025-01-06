@@ -24,7 +24,8 @@
       "class": "QStackedWidget",
       "directory": "PDF",
       "sub_apps": [
-        { "name": "Merge PDF", "class": "PDFPageMerger", "directory": "sub_apps"}
+        { "name": "Merge PDF", "class": "PDFPageMerger", "directory": "sub_apps"},
+        { "name": "Table Extractor", "class": "PDFTableExtractor", "directory": "sub_apps"}
       ]
     }
   ]
