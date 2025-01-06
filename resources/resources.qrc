@@ -1,17 +1,12 @@
 <!DOCTYPE RCC><RCC version="1.0">
-<qresource>
-    <file>images/components/red-dot.png</file>
-    <file>images/components/green-dot.png</file>
-    <file>images/icons/google.png</file>
-    <file>images/icons/cryptit.png</file>
-    <file>images/icons/gemini.png</file>
-    <file>images/icons/pdf.png</file>
-    <file>images/icons/default.png</file>
-<!--    <file>images/icons/whale.png</file>-->
-<!--    <file>images/icons/rocket.png</file>-->
-<!--    <file>images/icons/boat.png</file>-->
-<!--    <file>images/icons/rabbit.png</file>-->
-<!--    <file>images/icons/origami.png</file>-->
-    <file>fonts/Kanit-Medium.ttf</file>
+<qresource prefix="/">
+    <file>../images/components/red-dot.png</file>
+    <file>../images/components/green-dot.png</file>
+    <file>../images/icons/google.png</file>
+    <file>../images/icons/cryptit.png</file>
+    <file>../images/icons/gemini.png</file>
+    <file>../images/icons/pdf.png</file>
+    <file>../images/icons/default.png</file>
+    <file>../fonts/Kanit-Medium.ttf</file>
 </qresource>
 </RCC>
