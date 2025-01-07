@@ -42,7 +42,7 @@ class PDFTableExtractor(QWidget):
         form_layout.addRow(self.mode_dropdown[0], self.mode_dropdown[1])
 
         form_layout.setHorizontalSpacing(10)
-        form_layout.setVerticalSpacing(10)
+        form_layout.setVerticalSpacing(0)
         form_layout.setContentsMargins(10, 0, 10, 0)
 
         form_layout_wid = QWidget()
