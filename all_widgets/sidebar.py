@@ -6,10 +6,10 @@ from config.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-
 class Sidebar(QWidget):
     page_changed = Signal(int)  # Signal for main pages
     sub_page_changed = Signal(str)  # Signal for sub-pages
+    expanded = Signal()  # Signal emitted when the sidebar is expanded
 
     def __init__(self):
         super().__init__()
@@ -30,7 +30,6 @@ class Sidebar(QWidget):
         # Data structures
         self.parent_to_sub_items = {}  # Maps parent item text to sub-items
         self.sidebar_items = []  # Track parent items
-        self.item_text_backup = {}  # Backup for item texts
 
         # Toggle button
         self.toggle_button = QPushButton("▾")
@@ -71,6 +70,9 @@ class Sidebar(QWidget):
         # Populate sidebar dynamically
         self.populate_sidebar()
 
+        # Adjust sidebar width on initialization
+        self.adjust_sidebar_width()
+
         # Connect signals
         self.sidebar.itemClicked.connect(self.handle_item_clicked)
 
@@ -86,9 +88,6 @@ class Sidebar(QWidget):
             sub_apps = AppRegistry.get_all_sub_apps().get(app_name, {})
             for sub_app_name in sub_apps.keys():
                 self.add_sidebar_subitem(app_name, sub_app_name)
-
-        # Adjust sidebar width based on the longest text
-        self.adjust_sidebar_width()
 
     def adjust_sidebar_width(self):
         """Adjust the sidebar width dynamically based on the longest text, including sub-items."""
@@ -118,8 +117,6 @@ class Sidebar(QWidget):
         item.setIcon(QIcon(icon_path))
         item.setData(Qt.UserRole, {"is_parent": is_parent, "sub_items": []})
 
-        # Backup text for restoration
-        self.item_text_backup[self.sidebar.row(item)] = text
         if is_parent:
             self.parent_to_sub_items[text] = []  # Initialize list for sub-items
         return item
@@ -128,9 +125,6 @@ class Sidebar(QWidget):
         """Add a sub-item."""
         sub_item = QListWidgetItem(f"    {text}")  # Indentation for sub-items
         sub_item.setData(Qt.UserRole, {"is_parent": False, "parent_text": parent_text})
-
-        # Backup text for restoration
-        self.item_text_backup[self.sidebar.count()] = text
         self.sidebar.addItem(sub_item)  # Add to sidebar directly
         self.parent_to_sub_items[parent_text].append(sub_item)
 
@@ -143,18 +137,12 @@ class Sidebar(QWidget):
             self.animation.setStartValue(self.collapsed_width)
             self.animation.setEndValue(self.expanded_width)
             self.animation.start()
-
-            # Restore text for all items
-            for i in range(self.sidebar.count()):
-                item = self.sidebar.item(i)
-                text = self.item_text_backup.get(i, "")
-                if "    " in text:  # Check for indentation
-                    item.setText(f"    {text.strip()}")
-                else:
-                    item.setText(text)
-
             self.toggle_button.setText("▾")
             self.is_collapsed = False
+
+            # Emit expanded signal
+            logger.info("Sidebar expanded.")
+            self.expanded.emit()
         else:
             # Collapse sidebar
             self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
@@ -162,33 +150,40 @@ class Sidebar(QWidget):
             self.animation.setStartValue(self.expanded_width)
             self.animation.setEndValue(self.collapsed_width)
             self.animation.start()
-
-            # Hide text for all items
-            for i in range(self.sidebar.count()):
-                item = self.sidebar.item(i)
-                self.item_text_backup[i] = item.text()  # Backup current text
-                item.setText("")  # Hide text
-
             self.toggle_button.setText("▸")
             self.is_collapsed = True
+
+            # Log sidebar collapse
+            logger.info("Sidebar collapsed.")
 
     def handle_item_clicked(self, item):
         """Handle clicks on parent and sub-items."""
         item_data = item.data(Qt.UserRole)
         if item_data["is_parent"]:
+            # Hide all sub-items from previous main app
             self.hide_all_subitems()
-            self.show_subitems(item.text())
-            self.page_changed.emit(self.sidebar.row(item))  # Emit index for main app
-        else:
-            self.sub_page_changed.emit(item.text().strip())  # Emit sub-app name
 
-    def show_subitems(self, parent_text):
-        """Show sub-items for a parent."""
-        for sub_item in self.parent_to_sub_items.get(parent_text, []):
-            self.sidebar.addItem(sub_item)
+            # Show sub-items for the selected main app
+            self.show_subitems(item.text())
+
+            # Emit index for the selected main app
+            self.page_changed.emit(self.sidebar.row(item))
+        else:
+            # Emit sub-app name
+            self.sub_page_changed.emit(item.text().strip())
 
     def hide_all_subitems(self):
-        """Hide all sub-items."""
+        """Hide all sub-items from the sidebar."""
         for sub_items in self.parent_to_sub_items.values():
             for sub_item in sub_items:
-                self.sidebar.takeItem(self.sidebar.row(sub_item))
+                if sub_item in [self.sidebar.item(i) for i in range(self.sidebar.count())]:
+                    self.sidebar.takeItem(self.sidebar.row(sub_item))
+
+    def show_subitems(self, parent_text):
+        """Show sub-items for a given parent."""
+        if parent_text in self.parent_to_sub_items:
+            for sub_item in self.parent_to_sub_items[parent_text]:
+                self.sidebar.addItem(sub_item)
+        else:
+            logger.warning(f"No sub-items found for parent: {parent_text}")
+

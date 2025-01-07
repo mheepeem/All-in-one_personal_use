@@ -8,6 +8,7 @@ from config.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+
 class MainWindow(QMainWindow):
 
     def __init__(self, app):
@@ -19,6 +20,7 @@ class MainWindow(QMainWindow):
         # State tracking
         self.is_first_load = True
         self.last_selected_main_app = 0  # Default to the first valid app index
+        self.last_selected_sub_app = {}
 
         # Load fonts
         font_id = QFontDatabase.addApplicationFont(":/fonts/Kanit-Medium.ttf")
@@ -79,6 +81,7 @@ class MainWindow(QMainWindow):
         # Connect signals
         self.sidebar.page_changed.connect(self.switch_app)
         self.sidebar.sub_page_changed.connect(self.switch_sub_app)
+        self.sidebar.expanded.connect(self.handle_sidebar_expanded)
 
     def load_apps(self):
         """Load apps dynamically from the AppRegistry."""
@@ -104,29 +107,33 @@ class MainWindow(QMainWindow):
     def switch_app(self, index):
         """Switch between main apps."""
         adjusted_index = index + 1  # Offset for blank page
+        selected_app = self.content_area.widget(adjusted_index)
 
+        # Check if the main app is already the current app
+        if self.content_area.currentIndex() == adjusted_index:
+            logger.info(
+                f"Main app '{selected_app.objectName()}' is already displayed (index {index}). No action taken.")
+            return
+
+        # Hide all sub-apps of the previously selected main app
+        previous_app = self.content_area.currentWidget()
+        if isinstance(previous_app, QStackedWidget):
+            previous_app.setCurrentIndex(0)  # Reset to the default page (e.g., the first sub-app or main app view)
+
+        # Switch to the selected app
         if adjusted_index < self.content_area.count():
-            selected_app = self.content_area.widget(adjusted_index)
-
-            # Determine if the selected app has sub-apps
-            sub_apps = AppRegistry.get_all_sub_apps().get(selected_app.objectName(), {})
-            has_sub_apps = bool(sub_apps)
-
-            # Log and update last selected app
             self.last_selected_main_app = adjusted_index
-            logger.info(f"Switched to main app: {selected_app.objectName()} "
-                        f"(index {index}{', with sub-apps' if has_sub_apps else ''}).")
-
-            # Set the content area to the selected app
+            logger.info(f"Switched to main app: {selected_app.objectName()} (index {index}).")
             self.content_area.setCurrentIndex(adjusted_index)
         else:
             logger.warning(f"Invalid main app index: {index}. No app found.")
 
-        # Set first load to false after processing
-        self.is_first_load = False
-
     def switch_sub_app(self, sub_app_name):
         """Switch between sub-apps."""
+        if not sub_app_name:  # Check for empty sub-app name
+            logger.warning("Attempted to switch to a sub-app with an empty name.")
+            return
+
         current_app = self.content_area.currentWidget()
 
         # If the current app is not a QStackedWidget, locate and switch to the parent main app
@@ -156,15 +163,42 @@ class MainWindow(QMainWindow):
             if widget.objectName() == sub_app_name:
                 current_app.setCurrentIndex(i)
 
+                # Update the last selected sub-app for the current main app
+                self.last_selected_sub_app[current_app.objectName()] = sub_app_name
+
                 # Log the sub-app switch
                 logger.info(f"Switched to sub-app: {sub_app_name}.")
-
-                # Mark first load as complete after switching
                 self.is_first_load = False
                 return
 
         # Log a warning if the sub-app is not found
         logger.warning(f"Sub-app '{sub_app_name}' not found in the current app.")
+
+    def handle_sidebar_expanded(self):
+        """Handle actions when the sidebar is expanded."""
+        current_app = self.content_area.currentWidget()
+
+        if current_app:
+            if isinstance(current_app, QStackedWidget):
+                last_sub_app = self.last_selected_sub_app.get(current_app.objectName())
+
+                if last_sub_app:
+                    # Check if the last selected sub-app is already active
+                    current_sub_app_index = current_app.currentIndex()
+                    sub_app_widget = current_app.widget(current_sub_app_index)
+
+                    if sub_app_widget and sub_app_widget.objectName() != last_sub_app:
+                        logger.info(f"Restoring sub-app: {last_sub_app}.")
+                        self.switch_sub_app(last_sub_app)
+                    else:
+                        logger.debug(f"Sub-app {last_sub_app} is already active. No action taken.")
+                else:
+                    logger.debug(f"No previous sub-app to restore for main app: {current_app.objectName()}.")
+            else:
+                # Log for main apps without sub-apps
+                logger.debug(f"No sub-app handling required for main app: {current_app.objectName()}.")
+        else:
+            logger.warning("No current app found during sidebar expansion. Ignoring action.")
 
     def update_status_icon(self, is_connected):
         """Update the internet status icon based on connectivity."""
