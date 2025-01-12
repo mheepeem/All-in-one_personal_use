@@ -23,16 +23,12 @@ class PDFTableExtractor(QWidget):
             "Normal": {
                 "Combine Files": {"type": QComboBox, "options": ["Yes", "No"]},
                 "Combine Tables": {"type": QComboBox, "options": ["Yes", "No"]},
-            },
-            "Specific Case": {
-                "Specific Case Option": {"type": QLineEdit},
-            },
+            }
         }
 
         # ModeManagerArea
         self.mode_manager = ModeManagerArea(modes=self.modes)
         self.mode_manager.mode_changed.connect(self.on_mode_changed)
-        self.mode_manager.confirm_clicked.connect(self.process_all_files)
 
         # Confirm Button
         self.confirm_button = QPushButton("Confirm")
