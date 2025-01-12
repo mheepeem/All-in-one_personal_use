@@ -27,6 +27,11 @@
         { "name": "Page Pack", "class": "PDFPageMerger", "directory": "sub_apps"},
         { "name": "Table Extractor", "class": "PDFTableExtractor", "directory": "sub_apps"}
       ]
+    },
+    {
+      "name": "DA",
+      "icon": ":/images/icons/analysis.png",
+      "class": "QStackedWidget"
     }
   ]
 }

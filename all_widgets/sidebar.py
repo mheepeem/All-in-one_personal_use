@@ -160,10 +160,10 @@ class Sidebar(QWidget):
         """Handle clicks on parent and sub-items."""
         item_data = item.data(Qt.UserRole)
         if item_data["is_parent"]:
-            # Hide all sub-items from previous main app
+            # Hide all sub-items first
             self.hide_all_subitems()
 
-            # Show sub-items for the selected main app
+            # Show sub-items for the newly selected parent
             self.show_subitems(item.text())
 
             # Emit index for the selected main app
@@ -176,14 +176,27 @@ class Sidebar(QWidget):
         """Hide all sub-items from the sidebar."""
         for sub_items in self.parent_to_sub_items.values():
             for sub_item in sub_items:
+                # Remove sub-items from the sidebar
                 if sub_item in [self.sidebar.item(i) for i in range(self.sidebar.count())]:
                     self.sidebar.takeItem(self.sidebar.row(sub_item))
 
     def show_subitems(self, parent_text):
-        """Show sub-items for a given parent."""
+        """Show sub-items for a given parent in the correct order."""
         if parent_text in self.parent_to_sub_items:
-            for sub_item in self.parent_to_sub_items[parent_text]:
-                self.sidebar.addItem(sub_item)
+            parent_index = self.get_parent_index(parent_text)
+            if parent_index is not None:
+                # Insert sub-items immediately after the parent
+                for i, sub_item in enumerate(self.parent_to_sub_items[parent_text]):
+                    self.sidebar.insertItem(parent_index + 1 + i, sub_item)
         else:
             logger.warning(f"No sub-items found for parent: {parent_text}")
+
+    def get_parent_index(self, parent_text):
+        """Get the index of the parent item in the sidebar."""
+        for i in range(self.sidebar.count()):
+            item = self.sidebar.item(i)
+            if item.text() == parent_text and item.data(Qt.UserRole)["is_parent"]:
+                return i
+        return None
+
 
